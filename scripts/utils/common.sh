@@ -49,6 +49,15 @@ download_file() {
     fi
     
     log "Downloading: $url"
-    wget -q --show-progress -O "$dest.tmp" "$url" || die "Failed to download: $url"
-    mv "$dest.tmp" "$dest"
+    for i in {1..3}; do
+        if wget --timeout=30 --tries=3 -q --show-progress -O "$dest.tmp" "$url"; then
+            mv "$dest.tmp" "$dest"
+            return 0
+        fi
+        log "Retry $i/3..."
+        sleep 2
+    done
+    
+    rm -f "$dest.tmp"
+    die "Failed to download after 3 attempts: $url"
 }
