@@ -37,7 +37,18 @@ check_host_requirements() {
 download_file() {
     local url="$1"
     local dest="$2"
-    [[ -f "$dest" ]] && { log "File exists: $dest"; return 0; }
+    
+    if [[ -f "$dest" ]]; then
+        if tar -tf "$dest" &>/dev/null || file "$dest" | grep -q "gzip\|XZ\|bzip2"; then
+            log "File exists and valid: $dest"
+            return 0
+        else
+            log "File corrupted, re-downloading: $dest"
+            rm -f "$dest"
+        fi
+    fi
+    
     log "Downloading: $url"
-    wget -q --show-progress -O "$dest" "$url" || die "Failed to download: $url"
+    wget -q --show-progress -O "$dest.tmp" "$url" || die "Failed to download: $url"
+    mv "$dest.tmp" "$dest"
 }

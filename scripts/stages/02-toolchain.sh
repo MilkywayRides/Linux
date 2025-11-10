@@ -10,8 +10,13 @@ log "Stage 2: Building cross-toolchain"
 SOURCES="${SCRIPT_DIR}/sources"
 BUILD_DIR="${LFS}/build"
 
+umount -R $LFS/proc 2>/dev/null || true
+umount -R $LFS/sys 2>/dev/null || true
+umount -R $LFS/dev 2>/dev/null || true
+
 mkdir -p $LFS/usr/include
-chown -R lfs:lfs $BUILD_DIR $SOURCES $LFS
+chown -R lfs:lfs $BUILD_DIR $SOURCES 2>/dev/null || true
+chown -R lfs:lfs $LFS 2>/dev/null || true
 
 su - lfs -c "
 export LFS=$LFS

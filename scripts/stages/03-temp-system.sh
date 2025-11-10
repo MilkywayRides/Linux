@@ -10,7 +10,7 @@ log "Stage 3: Building temporary system"
 SOURCES="${SCRIPT_DIR}/sources"
 BUILD_DIR="${LFS}/build"
 
-chown -R lfs:lfs $BUILD_DIR $SOURCES $LFS
+chown -R lfs:lfs $BUILD_DIR $SOURCES 2>/dev/null || true
 
 su - lfs -c "
 export LFS=$LFS
