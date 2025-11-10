@@ -1,0 +1,7 @@
+sources/
+build/
+logs/
+*.log
+*.tar.*
+*.tgz
+/mnt/
