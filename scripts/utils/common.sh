@@ -48,11 +48,15 @@ download_file() {
         fi
     fi
     
-    local mirrors=("$url" "${url/ftp.gnu.org/mirrors.kernel.org\/gnu}")
+    local mirrors=(
+        "$url"
+        "${url//ftp.gnu.org/mirrors.kernel.org}"
+        "${url//ftp.gnu.org/mirror.us.leaseweb.net}"
+    )
     
     for mirror in "${mirrors[@]}"; do
         log "Downloading: $mirror"
-        if wget --timeout=60 --tries=2 -q --show-progress -O "$dest.tmp" "$mirror"; then
+        if wget --timeout=60 --tries=1 -q --show-progress -O "$dest.tmp" "$mirror" 2>&1; then
             mv "$dest.tmp" "$dest"
             return 0
         fi
