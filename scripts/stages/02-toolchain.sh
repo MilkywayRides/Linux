@@ -10,11 +10,15 @@ log "Stage 2: Building cross-toolchain"
 SOURCES="${SCRIPT_DIR}/sources"
 BUILD_DIR="${LFS}/build"
 
+mkdir -p $LFS/usr/include
+chown -R lfs:lfs $BUILD_DIR $SOURCES $LFS
+
 su - lfs -c "
 export LFS=$LFS
 export LFS_TGT=$LFS_TGT
 export MAKEFLAGS='$MAKEFLAGS'
 cd $BUILD_DIR
+rm -rf *
 
 tar -xf ${SOURCES}/binutils-${BINUTILS_VER}.tar.xz
 mkdir binutils-build && cd binutils-build
@@ -25,7 +29,7 @@ cd $BUILD_DIR && rm -rf binutils-*
 
 tar -xf ${SOURCES}/gcc-${GCC_VER}.tar.xz
 cd gcc-${GCC_VER}
-mkdir ../gcc-build && cd ../gcc-build
+mkdir -p ../gcc-build && cd ../gcc-build
 ../gcc-${GCC_VER}/configure --target=\$LFS_TGT --prefix=\$LFS/tools \
     --with-sysroot=\$LFS --without-headers --enable-languages=c,c++ \
     --disable-multilib --disable-shared
@@ -41,7 +45,7 @@ cp -rv usr/include \$LFS/usr/
 cd $BUILD_DIR && rm -rf linux-*
 
 tar -xf ${SOURCES}/glibc-${GLIBC_VER}.tar.xz
-mkdir glibc-build && cd glibc-build
+mkdir -p glibc-build && cd glibc-build
 ../glibc-${GLIBC_VER}/configure --prefix=/usr --host=\$LFS_TGT \
     --build=\$(../glibc-${GLIBC_VER}/scripts/config.guess) \
     --with-headers=\$LFS/usr/include --disable-nscd

@@ -10,10 +10,13 @@ log "Stage 3: Building temporary system"
 SOURCES="${SCRIPT_DIR}/sources"
 BUILD_DIR="${LFS}/build"
 
+chown -R lfs:lfs $BUILD_DIR $SOURCES $LFS
+
 su - lfs -c "
 export LFS=$LFS
 export MAKEFLAGS='$MAKEFLAGS'
 cd $BUILD_DIR
+rm -rf *
 
 tar -xf ${SOURCES}/bash-${BASH_VER}.tar.gz
 cd bash-${BASH_VER}
