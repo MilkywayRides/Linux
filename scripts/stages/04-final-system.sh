@@ -19,16 +19,10 @@ mount -t proc proc $LFS/proc || true
 mount -t sysfs sysfs $LFS/sys || true
 mount -t tmpfs tmpfs $LFS/run || true
 
-# Build coreutils in chroot to get /usr/bin/env
-if [ -f $LFS/bin/bash ]; then
-    chroot "$LFS" /bin/bash -c '
-        cd /sources
-        tar -xf coreutils-*.tar.xz
-        cd coreutils-*
-        ./configure --prefix=/usr
-        make -j$(nproc) && make install
-        cd /sources && rm -rf coreutils-*
-    '
+# Verify env exists
+if [ ! -f $LFS/usr/bin/env ]; then
+    log "ERROR: /usr/bin/env not found, stage 3 failed"
+    exit 1
 fi
 
 chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" \
