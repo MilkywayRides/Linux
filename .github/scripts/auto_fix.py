@@ -35,7 +35,8 @@ def main():
     repo = g.get_repo(os.getenv("REPO_NAME"))
 
     with open("error.log") as f:
-        error_log = f.read()[-8000:]
+        lines = f.readlines()
+        error_log = ''.join(lines[-60:])
 
     prompt = f"""You are fixing a Linux From Scratch build error. Analyze and provide ONLY the exact file changes needed.
 

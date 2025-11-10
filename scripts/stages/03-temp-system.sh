@@ -19,6 +19,8 @@ tar -xf $LFS/sources/bash-${BASH_VER}.tar.gz
 cd bash-${BASH_VER}
 ./configure --prefix=/usr --host=\$LFS_TGT --without-bash-malloc
 make \$MAKEFLAGS && make DESTDIR=\$LFS install
+ln -sf bash \$LFS/usr/bin/sh
+ln -sf ../usr/bin/bash \$LFS/bin/bash
 ln -sf bash \$LFS/bin/sh
 cd $BUILD_DIR && rm -rf bash-*
 
