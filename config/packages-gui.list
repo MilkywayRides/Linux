@@ -1,0 +1,11 @@
+# GUI Dependencies
+xorg-server|21.1.11|https://www.x.org/releases/individual/xserver/xorg-server-21.1.11.tar.xz
+libx11|1.8.7|https://www.x.org/releases/individual/lib/libX11-1.8.7.tar.xz
+libxcb|1.16|https://xcb.freedesktop.org/dist/libxcb-1.16.tar.xz
+gtk+|3.24.41|https://download.gnome.org/sources/gtk+/3.24/gtk+-3.24.41.tar.xz
+cairo|1.18.0|https://cairographics.org/releases/cairo-1.18.0.tar.xz
+pango|1.52.1|https://download.gnome.org/sources/pango/1.52/pango-1.52.1.tar.xz
+glib|2.78.4|https://download.gnome.org/sources/glib/2.78/glib-2.78.4.tar.xz
+pixman|0.43.4|https://cairographics.org/releases/pixman-0.43.4.tar.gz
+mesa|24.0.2|https://archive.mesa3d.org/mesa-24.0.2.tar.xz
+xterm|388|https://invisible-mirror.net/archives/xterm/xterm-388.tgz

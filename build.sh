@@ -18,6 +18,7 @@ Options:
     stage3   Build temporary system
     stage4   Build final system
     stage5   Configure system and kernel
+    stage6   Build native GUI (X11/GTK)
     usb      Create bootable USB
     clean    Clean build directories
     help     Show this help
@@ -47,6 +48,7 @@ case "${1:-help}" in
         run_stage "03-temp-system"
         run_stage "04-final-system"
         run_stage "05-configure"
+        run_stage "06-gui"
         log_success "BlazeNeuro build completed!"
         ;;
     stage1) check_root; run_stage "01-prepare" ;;
@@ -54,6 +56,7 @@ case "${1:-help}" in
     stage3) check_root; run_stage "03-temp-system" ;;
     stage4) check_root; run_stage "04-final-system" ;;
     stage5) check_root; run_stage "05-configure" ;;
+    stage6) check_root; run_stage "06-gui" ;;
     usb)
         check_root
         [[ -n "$2" ]] || die "Usage: $0 usb <device>"
