@@ -15,6 +15,7 @@ umount -R $LFS/sys 2>/dev/null || true
 umount -R $LFS/dev 2>/dev/null || true
 
 mkdir -p $LFS/usr/include
+chmod -R 755 $SOURCES
 chown -R lfs:lfs $BUILD_DIR $SOURCES 2>/dev/null || true
 chown -R lfs:lfs $LFS 2>/dev/null || true
 
