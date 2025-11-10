@@ -14,10 +14,9 @@ umount -R $LFS/proc 2>/dev/null || true
 umount -R $LFS/sys 2>/dev/null || true
 umount -R $LFS/dev 2>/dev/null || true
 
-mkdir -p $LFS/usr/include
-chmod -R 755 $SOURCES
-chown -R lfs:lfs $BUILD_DIR $SOURCES 2>/dev/null || true
-chown -R lfs:lfs $LFS 2>/dev/null || true
+mkdir -p $LFS/usr/include $LFS/sources
+cp -f $SOURCES/* $LFS/sources/ 2>/dev/null || true
+chown -R lfs:lfs $BUILD_DIR $LFS/sources $LFS 2>/dev/null || true
 
 su - lfs -c "
 export LFS=$LFS
@@ -26,14 +25,14 @@ export MAKEFLAGS='$MAKEFLAGS'
 cd $BUILD_DIR
 rm -rf *
 
-tar -xf ${SOURCES}/binutils-${BINUTILS_VER}.tar.xz
+tar -xf $LFS/sources/binutils-${BINUTILS_VER}.tar.xz
 mkdir binutils-build && cd binutils-build
 ../binutils-${BINUTILS_VER}/configure --prefix=\$LFS/tools --with-sysroot=\$LFS \
     --target=\$LFS_TGT --disable-nls --disable-werror
 make \$MAKEFLAGS && make install
 cd $BUILD_DIR && rm -rf binutils-*
 
-tar -xf ${SOURCES}/gcc-${GCC_VER}.tar.xz
+tar -xf $LFS/sources/gcc-${GCC_VER}.tar.xz
 cd gcc-${GCC_VER}
 mkdir -p ../gcc-build && cd ../gcc-build
 ../gcc-${GCC_VER}/configure --target=\$LFS_TGT --prefix=\$LFS/tools \
@@ -42,7 +41,7 @@ mkdir -p ../gcc-build && cd ../gcc-build
 make \$MAKEFLAGS && make install
 cd $BUILD_DIR && rm -rf gcc-*
 
-tar -xf ${SOURCES}/linux-${LINUX_VER}.tar.xz
+tar -xf $LFS/sources/linux-${LINUX_VER}.tar.xz
 cd linux-${LINUX_VER}
 make mrproper
 make headers
@@ -50,7 +49,7 @@ find usr/include -type f ! -name '*.h' -delete
 cp -rv usr/include \$LFS/usr/
 cd $BUILD_DIR && rm -rf linux-*
 
-tar -xf ${SOURCES}/glibc-${GLIBC_VER}.tar.xz
+tar -xf $LFS/sources/glibc-${GLIBC_VER}.tar.xz
 mkdir -p glibc-build && cd glibc-build
 ../glibc-${GLIBC_VER}/configure --prefix=/usr --host=\$LFS_TGT \
     --build=\$(../glibc-${GLIBC_VER}/scripts/config.guess) \
