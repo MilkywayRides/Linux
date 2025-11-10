@@ -92,3 +92,4 @@ Edit `config/blazeneuro.conf` to customize:
 ## License
 
 GPL v3
+# Linux
