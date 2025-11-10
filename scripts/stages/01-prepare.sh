@@ -27,6 +27,7 @@ fi
 
 chown -R lfs:lfs "$LFS"/{sources,tools,build} 2>/dev/null || true
 chown -R lfs:lfs "${SCRIPT_DIR}/sources"
+chmod -R 755 "${SCRIPT_DIR}/sources"
 
 cat > /home/lfs/.bashrc << "EOF"
 set +h
