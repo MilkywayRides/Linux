@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 360
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Free disk space
       run: |
@@ -34,7 +34,7 @@ jobs:
         ls -lh blazeneuro-system.tar.gz
     
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: blazeneuro-system
         path: blazeneuro-system.tar.gz
