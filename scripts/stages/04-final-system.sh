@@ -19,14 +19,20 @@ mount -t proc proc $LFS/proc || true
 mount -t sysfs sysfs $LFS/sys || true
 mount -t tmpfs tmpfs $LFS/run || true
 
-# Verify env exists
+# Verify critical binaries exist
 if [ ! -f $LFS/usr/bin/env ]; then
-    log "ERROR: /usr/bin/env not found, stage 3 failed"
+    log_error "/usr/bin/env not found in $LFS/usr/bin"
+    ls -la $LFS/usr/bin/ | head -20
+    exit 1
+fi
+
+if [ ! -f $LFS/bin/bash ]; then
+    log_error "/bin/bash not found in $LFS/bin"
     exit 1
 fi
 
 chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" \
-    PATH=/usr/bin:/usr/sbin MAKEFLAGS="$MAKEFLAGS" \
+    PATH=/usr/bin:/usr/sbin:/bin:/sbin MAKEFLAGS="$MAKEFLAGS" \
     /bin/bash --login << "EOFCHROOT"
 set -e
 cd /sources

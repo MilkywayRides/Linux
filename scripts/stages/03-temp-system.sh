@@ -27,7 +27,7 @@ cd coreutils-${COREUTILS_VER}
 ./configure --prefix=/usr --host=\$LFS_TGT --enable-install-program=hostname
 make \$MAKEFLAGS
 make DESTDIR=\$LFS install
-cp -v \$LFS/usr/bin/env \$LFS/usr/bin/ 2>/dev/null || true
+mv -v \$LFS/usr/bin/chroot \$LFS/usr/sbin/ 2>/dev/null || true
 cd $BUILD_DIR && rm -rf coreutils-*
 
 tar -xf $LFS/sources/findutils-4.9.0.tar.xz
