@@ -9,10 +9,6 @@ log "Stage 4: Building final system"
 
 mkdir -p $LFS/{dev,proc,sys,run,tmp,var,etc,boot}
 mkdir -p $LFS/usr/{bin,lib,sbin}
-mkdir -p $LFS/bin
-
-cp /bin/bash $LFS/bin/ 2>/dev/null || cp /usr/bin/bash $LFS/bin/
-cp /usr/bin/env $LFS/usr/bin/ 2>/dev/null || true
 
 mknod -m 600 $LFS/dev/console c 5 1 2>/dev/null || true
 mknod -m 666 $LFS/dev/null c 1 3 2>/dev/null || true
@@ -23,10 +19,16 @@ mount -t proc proc $LFS/proc || true
 mount -t sysfs sysfs $LFS/sys || true
 mount -t tmpfs tmpfs $LFS/run || true
 
-if [ ! -f $LFS/usr/bin/env ]; then
-    log "Skipping chroot - system not ready"
-    log_success "Stage 4 completed (partial)"
-    exit 0
+# Build coreutils in chroot to get /usr/bin/env
+if [ -f $LFS/bin/bash ]; then
+    chroot "$LFS" /bin/bash -c '
+        cd /sources
+        tar -xf coreutils-*.tar.xz
+        cd coreutils-*
+        ./configure --prefix=/usr
+        make -j$(nproc) && make install
+        cd /sources && rm -rf coreutils-*
+    '
 fi
 
 chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" \
