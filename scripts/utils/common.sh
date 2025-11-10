@@ -48,16 +48,17 @@ download_file() {
         fi
     fi
     
-    log "Downloading: $url"
-    for i in {1..3}; do
-        if wget --timeout=30 --tries=3 -q --show-progress -O "$dest.tmp" "$url"; then
+    local mirrors=("$url" "${url/ftp.gnu.org/mirrors.kernel.org\/gnu}")
+    
+    for mirror in "${mirrors[@]}"; do
+        log "Downloading: $mirror"
+        if wget --timeout=60 --tries=2 -q --show-progress -O "$dest.tmp" "$mirror"; then
             mv "$dest.tmp" "$dest"
             return 0
         fi
-        log "Retry $i/3..."
-        sleep 2
+        log "Mirror failed, trying next..."
     done
     
     rm -f "$dest.tmp"
-    die "Failed to download after 3 attempts: $url"
+    die "Failed to download from all mirrors: $url"
 }

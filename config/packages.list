@@ -9,6 +9,6 @@ e2fsprogs|1.47.0|https://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v
 grub|2.12|https://ftp.gnu.org/gnu/grub/grub-2.12.tar.xz
 findutils|4.9.0|https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz
 grep|3.11|https://ftp.gnu.org/gnu/grep/grep-3.11.tar.xz
-tar|1.35|https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz
+tar|1.35|https://mirrors.kernel.org/gnu/tar/tar-1.35.tar.xz
 xz|5.4.6|https://github.com/tukaani-project/xz/releases/download/v5.4.6/xz-5.4.6.tar.xz
 gzip|1.13|https://ftp.gnu.org/gnu/gzip/gzip-1.13.tar.xz
