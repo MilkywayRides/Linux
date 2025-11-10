@@ -7,6 +7,9 @@ source "${SCRIPT_DIR}/scripts/utils/common.sh"
 
 log "Stage 5: Configuring system and kernel"
 
+cp "${SCRIPT_DIR}/config/Xresources" "$LFS/sources/"
+cp "${SCRIPT_DIR}/config/bashrc" "$LFS/sources/"
+
 chroot "$LFS" /bin/bash << EOFCHROOT
 set -e
 
@@ -47,6 +50,12 @@ mount -t devtmpfs devtmpfs /dev
 exec /bin/bash
 EOFINIT
 chmod +x /sbin/init
+
+# Install terminal theme
+cp /sources/Xresources /root/.Xresources
+cp /sources/bashrc /root/.bashrc
+xrdb -merge /root/.Xresources 2>/dev/null || true
+
 EOFCHROOT
 
 log_success "Stage 5 completed"

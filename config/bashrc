@@ -1,0 +1,9 @@
+# BlazeNeuro Bash Configuration
+export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;32m\]\w\[\033[00m\]\$ '
+export LS_COLORS='di=01;32:fi=00;32:ln=01;36:ex=01;32'
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+export TERM=xterm-256color
+
+# Green prompt
+export PS1='\[\e[1;32m\][\u@\h \W]\$\[\e[0m\] '
