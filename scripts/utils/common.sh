@@ -36,8 +36,15 @@ extract_source() {
     local archive="$1"
     local dest="${2:-$BUILD_DIR}"
     mkdir -p "$dest"
-    log "Extracting: $(basename $archive)"
-    tar -xf "$archive" -C "$dest"
+    
+    # Find actual archive file
+    local actual_file=$(ls $archive 2>/dev/null | head -1)
+    if [ -z "$actual_file" ]; then
+        die "Archive not found: $archive"
+    fi
+    
+    log "Extracting: $(basename $actual_file)"
+    tar -xf "$actual_file" -C "$dest"
 }
 
 build_package() {
@@ -48,7 +55,22 @@ build_package() {
     log "Building $name-$version..."
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
-    extract_source "${SOURCES_DIR}/${name}-${version}.tar.*"
+    
+    # Find source file in both locations
+    local src_file=""
+    if [ -f "$LFS/sources/${name}-${version}.tar.xz" ]; then
+        src_file="$LFS/sources/${name}-${version}.tar.xz"
+    elif [ -f "$LFS/sources/${name}-${version}.tar.gz" ]; then
+        src_file="$LFS/sources/${name}-${version}.tar.gz"
+    elif [ -f "${SOURCES_DIR}/${name}-${version}.tar.xz" ]; then
+        src_file="${SOURCES_DIR}/${name}-${version}.tar.xz"
+    elif [ -f "${SOURCES_DIR}/${name}-${version}.tar.gz" ]; then
+        src_file="${SOURCES_DIR}/${name}-${version}.tar.gz"
+    else
+        die "Source not found: ${name}-${version}"
+    fi
+    
+    extract_source "$src_file"
     cd "${name}-${version}"
     $build_func
     cd "$BUILD_DIR"

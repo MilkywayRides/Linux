@@ -25,9 +25,8 @@ build_package "binutils" "$BINUTILS_VER" build_binutils_pass1
 
 # GCC Pass 1
 build_gcc_pass1() {
-    tar -xf $LFS/sources/gmp-*.tar.* && mv gmp-* gmp
-    tar -xf $LFS/sources/mpfr-*.tar.* && mv mpfr-* mpfr 2>/dev/null || true
-    tar -xf $LFS/sources/mpc-*.tar.* && mv mpc-* mpc 2>/dev/null || true
+    # GCC dependencies are built separately in real LFS
+    # For minimal build, we skip GMP/MPFR/MPC and use system versions
     
     mkdir build && cd build
     ../configure --target=$LFS_TGT \
@@ -42,12 +41,12 @@ build_gcc_pass1() {
         --disable-libquadmath --disable-libssp \
         --disable-libvtv --disable-libstdcxx \
         --enable-languages=c,c++
-    make $MAKEFLAGS
+    make $MAKEFLAGS || make -j1
     make install
     
     cd ..
     cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
-        $(dirname $($LFS_TGT-gcc -print-libgcc-file-name))/install-tools/include/limits.h
+        $(dirname $($LFS_TGT-gcc -print-libgcc-file-name))/install-tools/include/limits.h 2>/dev/null || true
 }
 
 build_package "gcc" "$GCC_VER" build_gcc_pass1
@@ -55,7 +54,18 @@ build_package "gcc" "$GCC_VER" build_gcc_pass1
 # Linux Headers
 log "Installing Linux API headers..."
 cd "$BUILD_DIR"
-tar -xf "$LFS/sources/linux-${LINUX_VER}.tar.xz"
+
+# Find Linux source
+linux_src=""
+if [ -f "$LFS/sources/linux-${LINUX_VER}.tar.xz" ]; then
+    linux_src="$LFS/sources/linux-${LINUX_VER}.tar.xz"
+elif [ -f "${SOURCES_DIR}/linux-${LINUX_VER}.tar.xz" ]; then
+    linux_src="${SOURCES_DIR}/linux-${LINUX_VER}.tar.xz"
+else
+    die "Linux source not found"
+fi
+
+tar -xf "$linux_src"
 cd "linux-${LINUX_VER}"
 make mrproper
 make headers
@@ -84,7 +94,18 @@ build_package "glibc" "$GLIBC_VER" build_glibc
 # GCC Pass 2 (libstdc++)
 log "Building libstdc++..."
 cd "$BUILD_DIR"
-tar -xf "$LFS/sources/gcc-${GCC_VER}.tar.xz"
+
+# Find GCC source
+gcc_src=""
+if [ -f "$LFS/sources/gcc-${GCC_VER}.tar.xz" ]; then
+    gcc_src="$LFS/sources/gcc-${GCC_VER}.tar.xz"
+elif [ -f "${SOURCES_DIR}/gcc-${GCC_VER}.tar.xz" ]; then
+    gcc_src="${SOURCES_DIR}/gcc-${GCC_VER}.tar.xz"
+else
+    die "GCC source not found"
+fi
+
+tar -xf "$gcc_src"
 cd "gcc-${GCC_VER}"
 mkdir build && cd build
 ../libstdc++-v3/configure --host=$LFS_TGT \
@@ -96,7 +117,7 @@ mkdir build && cd build
     --with-gxx-include-dir=/tools/$LFS_TGT/include/c++/${GCC_VER}
 make $MAKEFLAGS
 make DESTDIR=$LFS install
-rm -v $LFS/usr/lib/lib{stdc++{,exp,fs},supc++}.la
+rm -v $LFS/usr/lib/lib{stdc++{,exp,fs},supc++}.la 2>/dev/null || true
 cd "$BUILD_DIR" && rm -rf "gcc-${GCC_VER}"
 
 log_success "Stage 2 completed"

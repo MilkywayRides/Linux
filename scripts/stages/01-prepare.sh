@@ -32,7 +32,11 @@ chown -R lfs:lfs "$LFS"/{tools,sources,build}
 
 # Copy sources to LFS
 log "Copying source packages..."
-cp -v "${SOURCES_DIR}"/* "$LFS/sources/" 2>/dev/null || true
+if [ -d "${SOURCES_DIR}" ] && [ "$(ls -A ${SOURCES_DIR}/*.tar.* 2>/dev/null)" ]; then
+    cp -v "${SOURCES_DIR}"/*.tar.* "$LFS/sources/" || log "Warning: Some sources not copied"
+else
+    log "Warning: No source packages found in ${SOURCES_DIR}"
+fi
 
 # Create build environment script
 cat > "$LFS/build-env.sh" << 'EOF'

@@ -33,6 +33,12 @@ jobs:
           sudo mkdir -p /mnt/lfs
           sudo chown -R $USER:$USER /mnt/lfs
           mkdir -p logs build
+          
+      - name: Verify sources
+        run: |
+          echo "Checking source packages..."
+          ls -lh sources/
+          echo "Total packages: $(ls -1 sources/*.tar.* 2>/dev/null | wc -l)"
       
       - name: Build complete system
         run: sudo ./build.sh all
