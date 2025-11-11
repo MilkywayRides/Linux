@@ -25,7 +25,7 @@ check_root() {
 check_host_requirements() {
     log "Checking host requirements..."
     local missing=""
-    for cmd in gcc g++ make bison texinfo; do
+    for cmd in gcc g++ make bison makeinfo; do
         command -v $cmd &>/dev/null || missing+="$cmd "
     done
     [[ -z "$missing" ]] || die "Missing tools: $missing"
