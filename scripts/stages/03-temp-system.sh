@@ -7,48 +7,86 @@ source "${SCRIPT_DIR}/scripts/utils/common.sh"
 
 log "Stage 3: Building temporary system"
 
-BUILD_DIR="${LFS}/build"
+export PATH="$LFS/tools/bin:$PATH"
 
-su - lfs -c "
-export LFS=$LFS
-export MAKEFLAGS='$MAKEFLAGS'
-cd $BUILD_DIR
-rm -rf *
+# Bash
+build_bash() {
+    ./configure --prefix=/usr \
+        --host=$LFS_TGT \
+        --build=$(sh support/config.guess) \
+        --without-bash-malloc
+    make $MAKEFLAGS
+    make DESTDIR=$LFS install
+    ln -sv bash $LFS/usr/bin/sh
+}
 
-tar -xf $LFS/sources/bash-${BASH_VER}.tar.gz
-cd bash-${BASH_VER}
-./configure --prefix=/usr --host=\$LFS_TGT --without-bash-malloc
-make \$MAKEFLAGS && make DESTDIR=\$LFS install
-ln -sf bash \$LFS/usr/bin/sh
-ln -sf ../usr/bin/bash \$LFS/bin/bash
-ln -sf bash \$LFS/bin/sh
-cd $BUILD_DIR && rm -rf bash-*
+build_package "bash" "5.2.21" build_bash
 
-tar -xf $LFS/sources/coreutils-${COREUTILS_VER}.tar.xz
-cd coreutils-${COREUTILS_VER}
-./configure --prefix=/usr --host=\$LFS_TGT --enable-install-program=hostname
-make \$MAKEFLAGS
-make DESTDIR=\$LFS install
-mv -v \$LFS/usr/bin/chroot \$LFS/usr/sbin/ 2>/dev/null || true
-cd $BUILD_DIR && rm -rf coreutils-*
+# Coreutils
+build_coreutils() {
+    ./configure --prefix=/usr \
+        --host=$LFS_TGT \
+        --build=$(build-aux/config.guess) \
+        --enable-install-program=hostname \
+        --enable-no-install-program=kill,uptime
+    make $MAKEFLAGS
+    make DESTDIR=$LFS install
+    mv -v $LFS/usr/bin/chroot $LFS/usr/sbin
+}
 
-tar -xf $LFS/sources/findutils-4.9.0.tar.xz
-cd findutils-4.9.0
-./configure --prefix=/usr --host=\$LFS_TGT
-make \$MAKEFLAGS && make DESTDIR=\$LFS install
-cd $BUILD_DIR && rm -rf findutils-*
+build_package "coreutils" "9.4" build_coreutils
 
-tar -xf $LFS/sources/grep-3.11.tar.xz
-cd grep-3.11
-./configure --prefix=/usr --host=\$LFS_TGT
-make \$MAKEFLAGS && make DESTDIR=\$LFS install
-cd $BUILD_DIR && rm -rf grep-*
+# Findutils
+build_findutils() {
+    ./configure --prefix=/usr \
+        --host=$LFS_TGT \
+        --build=$(build-aux/config.guess)
+    make $MAKEFLAGS
+    make DESTDIR=$LFS install
+}
 
-tar -xf $LFS/sources/tar-1.35.tar.xz
-cd tar-1.35
-./configure --prefix=/usr --host=\$LFS_TGT
-make \$MAKEFLAGS && make DESTDIR=\$LFS install
-cd $BUILD_DIR && rm -rf tar-*
-"
+build_package "findutils" "4.9.0" build_findutils
+
+# Grep
+build_grep() {
+    ./configure --prefix=/usr --host=$LFS_TGT
+    make $MAKEFLAGS
+    make DESTDIR=$LFS install
+}
+
+build_package "grep" "3.11" build_grep
+
+# Gzip
+build_gzip() {
+    ./configure --prefix=/usr --host=$LFS_TGT
+    make $MAKEFLAGS
+    make DESTDIR=$LFS install
+}
+
+build_package "gzip" "1.13" build_gzip
+
+# Tar
+build_tar() {
+    ./configure --prefix=/usr \
+        --host=$LFS_TGT \
+        --build=$(build-aux/config.guess)
+    make $MAKEFLAGS
+    make DESTDIR=$LFS install
+}
+
+build_package "tar" "1.35" build_tar
+
+# XZ
+build_xz() {
+    ./configure --prefix=/usr \
+        --host=$LFS_TGT \
+        --build=$(build-aux/config.guess) \
+        --disable-static
+    make $MAKEFLAGS
+    make DESTDIR=$LFS install
+    rm -v $LFS/usr/lib/liblzma.la
+}
+
+build_package "xz" "5.4.6" build_xz
 
 log_success "Stage 3 completed"

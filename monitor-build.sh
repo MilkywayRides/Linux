@@ -1,19 +1,20 @@
 #!/bin/bash
-# Monitor GitHub Actions and show status
 
-REPO="MilkywayRides/Linux"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG_FILE="${SCRIPT_DIR}/logs/build.log"
 
-while true; do
-    clear
-    echo "=== BlazeNeuro Build Monitor ==="
-    echo "Checking: https://github.com/$REPO/actions"
-    echo ""
-    
-    # Get latest workflow run
-    gh run list --repo $REPO --limit 1 --json status,conclusion,name,createdAt
-    
-    echo ""
-    echo "Press Ctrl+C to stop monitoring"
-    echo "Refreshing in 30 seconds..."
-    sleep 30
-done
+echo "BlazeNeuro Build Monitor"
+echo "========================"
+echo
+
+if [[ ! -f "$LOG_FILE" ]]; then
+    echo "No build log found. Start build with: sudo ./build.sh all"
+    exit 1
+fi
+
+echo "Monitoring: $LOG_FILE"
+echo "Press Ctrl+C to exit"
+echo
+echo "----------------------------------------"
+
+tail -f "$LOG_FILE"

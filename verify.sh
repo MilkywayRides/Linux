@@ -1,80 +1,79 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "BlazeNeuro Build System Verification"
 echo "====================================="
 echo
 
-errors=0
-
-check_file() {
-    if [[ -f "$1" ]]; then
-        echo "✓ $1"
+# Check directory structure
+echo "[1/5] Checking directory structure..."
+for dir in config scripts/stages scripts/utils usb-installer sources; do
+    if [[ -d "$SCRIPT_DIR/$dir" ]]; then
+        echo "  ✓ $dir"
     else
-        echo "✗ $1 (missing)"
-        ((errors++))
-    fi
-}
-
-check_dir() {
-    if [[ -d "$1" ]]; then
-        echo "✓ $1/"
-    else
-        echo "✗ $1/ (missing)"
-        ((errors++))
-    fi
-}
-
-echo "Checking directory structure..."
-check_dir "config"
-check_dir "scripts/stages"
-check_dir "scripts/utils"
-check_dir "usb-installer"
-check_dir "sources"
-check_dir "logs"
-
-echo
-echo "Checking configuration files..."
-check_file "config/blazeneuro.conf"
-check_file "config/packages.list"
-
-echo
-echo "Checking build scripts..."
-check_file "build.sh"
-check_file "scripts/stages/01-prepare.sh"
-check_file "scripts/stages/02-toolchain.sh"
-check_file "scripts/stages/03-temp-system.sh"
-check_file "scripts/stages/04-final-system.sh"
-check_file "scripts/stages/05-configure.sh"
-check_file "scripts/utils/common.sh"
-check_file "usb-installer/create-usb.sh"
-
-echo
-echo "Checking executability..."
-for script in build.sh scripts/stages/*.sh scripts/utils/*.sh usb-installer/*.sh; do
-    if [[ -x "$script" ]]; then
-        echo "✓ $script (executable)"
-    else
-        echo "✗ $script (not executable)"
-        ((errors++))
+        echo "  ✗ $dir (missing)"
     fi
 done
-
 echo
-echo "Checking host requirements..."
-for cmd in bash gcc g++ make wget tar bison gawk; do
-    if command -v $cmd &>/dev/null; then
-        echo "✓ $cmd"
+
+# Check configuration files
+echo "[2/5] Checking configuration files..."
+for file in config/blazeneuro.conf config/packages.list; do
+    if [[ -f "$SCRIPT_DIR/$file" ]]; then
+        echo "  ✓ $file"
     else
-        echo "✗ $cmd (not found)"
-        ((errors++))
+        echo "  ✗ $file (missing)"
     fi
 done
-
 echo
-if [[ $errors -eq 0 ]]; then
-    echo "✓ All checks passed! Ready to build."
-    exit 0
+
+# Check stage scripts
+echo "[3/5] Checking stage scripts..."
+for stage in 01-prepare 02-toolchain 03-temp-system 04-final-system 05-configure 06-gui; do
+    if [[ -f "$SCRIPT_DIR/scripts/stages/${stage}.sh" ]]; then
+        echo "  ✓ ${stage}.sh"
+    else
+        echo "  ✗ ${stage}.sh (missing)"
+    fi
+done
+echo
+
+# Check source packages
+echo "[4/5] Checking source packages..."
+count=$(ls -1 "$SCRIPT_DIR/sources"/*.tar.* 2>/dev/null | wc -l)
+echo "  Found $count source packages"
+if [[ $count -ge 10 ]]; then
+    echo "  ✓ Sufficient sources available"
 else
-    echo "✗ Found $errors error(s). Please fix before building."
-    exit 1
+    echo "  ⚠ Run: bash scripts/download-sources.sh"
+fi
+echo
+
+# Check host requirements
+echo "[5/5] Checking host requirements..."
+missing=""
+for cmd in gcc g++ make bison flex texinfo gawk; do
+    if command -v $cmd &>/dev/null; then
+        echo "  ✓ $cmd"
+    else
+        echo "  ✗ $cmd (missing)"
+        missing+="$cmd "
+    fi
+done
+
+if [[ -n "$missing" ]]; then
+    echo
+    echo "Install missing tools:"
+    echo "  sudo apt-get install build-essential bison flex texinfo gawk"
+fi
+echo
+
+# Summary
+echo "====================================="
+if [[ -z "$missing" && $count -ge 10 ]]; then
+    echo "✓ System ready to build"
+    echo "  Run: sudo ./build.sh all"
+else
+    echo "⚠ Please resolve issues above"
 fi

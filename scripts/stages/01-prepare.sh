@@ -7,40 +7,39 @@ source "${SCRIPT_DIR}/scripts/utils/common.sh"
 
 log "Stage 1: Preparing build environment"
 
-mkdir -p "$LFS"/{sources,tools,build}
-mkdir -p "${SCRIPT_DIR}/sources"
+# Create LFS directory structure
+mkdir -p "$LFS"/{tools,sources,build,usr,boot,etc,var,home}
+mkdir -p "$LFS"/usr/{bin,lib,sbin}
+mkdir -p "$LFS"/var/{log,tmp}
 
-log "Downloading source packages..."
-while IFS='|' read -r name version url; do
-    [[ "$name" =~ ^#.*$ || -z "$name" ]] && continue
-    filename=$(basename "$url")
-    dest="${SCRIPT_DIR}/sources/${filename}"
-    download_file "$url" "$dest"
-done < "${SCRIPT_DIR}/config/packages.list"
+# Create symlinks for compatibility
+ln -sf usr/bin "$LFS/bin" 2>/dev/null || true
+ln -sf usr/lib "$LFS/lib" 2>/dev/null || true
+ln -sf usr/sbin "$LFS/sbin" 2>/dev/null || true
 
-if ! id lfs &>/dev/null; then
-    log "Creating lfs user..."
-    groupadd lfs 2>/dev/null || true
-    useradd -s /bin/bash -g lfs -m -k /dev/null lfs 2>/dev/null || true
-    echo "lfs:lfs" | chpasswd
+# Create lfs user if not exists
+if ! id -u lfs &>/dev/null; then
+    groupadd lfs
+    useradd -s /bin/bash -g lfs -m -k /dev/null lfs
+    log "Created lfs user"
 fi
 
-chown -R lfs:lfs "$LFS"/{sources,tools,build} 2>/dev/null || true
-chown -R lfs:lfs "${SCRIPT_DIR}/sources"
-chmod -R 755 "${SCRIPT_DIR}/sources"
+# Set ownership
+chown -R lfs:lfs "$LFS"/{tools,sources,build}
 
-cat > /home/lfs/.bashrc << "EOF"
+# Copy sources to LFS
+log "Copying source packages..."
+cp -v "${SOURCES_DIR}"/* "$LFS/sources/" 2>/dev/null || true
+
+# Create build environment script
+cat > "$LFS/build-env.sh" << 'EOF'
 set +h
 umask 022
 LFS=/mnt/lfs
 LC_ALL=POSIX
-LFS_TGT=$(uname -m)-lfs-linux-gnu
-PATH=/usr/bin
-if [ ! -L /bin ]; then PATH=/bin:$PATH; fi
-PATH=$LFS/tools/bin:$PATH
-CONFIG_SITE=$LFS/usr/share/config.site
-export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
+LFS_TGT=x86_64-lfs-linux-gnu
+PATH=/tools/bin:/bin:/usr/bin
+export LFS LC_ALL LFS_TGT PATH
 EOF
 
-chown lfs:lfs /home/lfs/.bashrc
 log_success "Stage 1 completed"

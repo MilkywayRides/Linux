@@ -7,49 +7,86 @@ source "${SCRIPT_DIR}/scripts/utils/common.sh"
 
 log "Stage 4: Building final system"
 
-mkdir -p $LFS/{dev,proc,sys,run,tmp,var,etc,boot}
-mkdir -p $LFS/usr/{bin,lib,sbin}
+# Prepare chroot environment
+mkdir -pv $LFS/{dev,proc,sys,run}
 
+# Create essential device nodes
 mknod -m 600 $LFS/dev/console c 5 1 2>/dev/null || true
 mknod -m 666 $LFS/dev/null c 1 3 2>/dev/null || true
 
-mount --bind /dev $LFS/dev || true
-mount -t devpts devpts $LFS/dev/pts || true
-mount -t proc proc $LFS/proc || true
-mount -t sysfs sysfs $LFS/sys || true
-mount -t tmpfs tmpfs $LFS/run || true
+# Mount virtual filesystems
+mount -v --bind /dev $LFS/dev
+mount -v --bind /dev/pts $LFS/dev/pts
+mount -vt proc proc $LFS/proc
+mount -vt sysfs sysfs $LFS/sys
+mount -vt tmpfs tmpfs $LFS/run
 
-# Verify critical binaries exist
-if [ ! -f $LFS/usr/bin/env ]; then
-    log_error "/usr/bin/env not found in $LFS/usr/bin"
-    ls -la $LFS/usr/bin/ | head -20
-    exit 1
-fi
-
-if [ ! -f $LFS/bin/bash ]; then
-    log_error "/bin/bash not found in $LFS/bin"
-    exit 1
-fi
-
-chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" \
-    PATH=/usr/bin:/usr/sbin:/bin:/sbin MAKEFLAGS="$MAKEFLAGS" \
-    /bin/bash --login << "EOFCHROOT"
+# Create chroot build script
+cat > $LFS/build-final.sh << 'EOFCHROOT'
+#!/bin/bash
 set -e
+
+export PATH=/usr/bin:/usr/sbin
+export MAKEFLAGS="-j$(nproc)"
+
 cd /sources
 
-tar -xf util-linux-*.tar.xz
-cd util-linux-*
-./configure --disable-chfn-chsh --disable-login --disable-su \
-    --disable-static --without-python
-make -j$(nproc) && make install
-cd /sources && rm -rf util-linux-*
-
-tar -xf e2fsprogs-*.tar.gz
-cd e2fsprogs-*
+# Util-linux
+tar -xf util-linux-2.39.3.tar.xz
+cd util-linux-2.39.3
 mkdir build && cd build
-../configure --prefix=/usr --sysconfdir=/etc --enable-elf-shlibs
-make -j$(nproc) && make install
-cd /sources && rm -rf e2fsprogs-*
+../configure --prefix=/usr \
+    --disable-chfn-chsh \
+    --disable-login \
+    --disable-nologin \
+    --disable-su \
+    --disable-setpriv \
+    --disable-runuser \
+    --disable-pylibmount \
+    --disable-static \
+    --without-python
+make
+make install
+cd /sources && rm -rf util-linux-2.39.3
+
+# E2fsprogs
+tar -xf e2fsprogs-1.47.0.tar.gz
+cd e2fsprogs-1.47.0
+mkdir build && cd build
+../configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --enable-elf-shlibs \
+    --disable-libblkid \
+    --disable-libuuid \
+    --disable-uuidd \
+    --disable-fsck
+make
+make install
+rm -fv /usr/lib/{libcom_err,libe2p,libext2fs,libss}.a
+cd /sources && rm -rf e2fsprogs-1.47.0
+
+echo "Final system build completed"
 EOFCHROOT
+
+chmod +x $LFS/build-final.sh
+
+# Execute in chroot
+log "Entering chroot environment..."
+chroot "$LFS" /usr/bin/env -i \
+    HOME=/root \
+    TERM="$TERM" \
+    PS1='(lfs chroot) \u:\w\$ ' \
+    PATH=/usr/bin:/usr/sbin \
+    /bin/bash /build-final.sh
+
+# Cleanup
+rm -f $LFS/build-final.sh
+
+# Unmount virtual filesystems
+umount -v $LFS/dev/pts
+umount -v $LFS/dev
+umount -v $LFS/proc
+umount -v $LFS/sys
+umount -v $LFS/run
 
 log_success "Stage 4 completed"

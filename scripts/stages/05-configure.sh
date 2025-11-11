@@ -5,57 +5,91 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/config/blazeneuro.conf"
 source "${SCRIPT_DIR}/scripts/utils/common.sh"
 
-log "Stage 5: Configuring system and kernel"
+log "Stage 5: System configuration and kernel"
 
-cp "${SCRIPT_DIR}/config/Xresources" "$LFS/sources/"
-cp "${SCRIPT_DIR}/config/bashrc" "$LFS/sources/"
+# Mount virtual filesystems
+mount -v --bind /dev $LFS/dev
+mount -v --bind /dev/pts $LFS/dev/pts
+mount -vt proc proc $LFS/proc
+mount -vt sysfs sysfs $LFS/sys
+mount -vt tmpfs tmpfs $LFS/run
 
-chroot "$LFS" /bin/bash << EOFCHROOT
+# Create configuration script
+cat > $LFS/configure-system.sh << 'EOFCHROOT'
+#!/bin/bash
 set -e
 
-cat > /etc/fstab << "EOF"
-/dev/sda2  /      ext4  defaults  1  1
-/dev/sda1  /boot  vfat  defaults  0  2
-proc       /proc  proc  defaults  0  0
-sysfs      /sys   sysfs defaults  0  0
+# System configuration
+echo "blazeneuro" > /etc/hostname
+
+cat > /etc/hosts << EOF
+127.0.0.1 localhost blazeneuro
+::1       localhost
 EOF
 
-echo "$HOSTNAME" > /etc/hostname
-
-cat > /etc/hosts << "EOF"
-127.0.0.1  localhost
-::1        localhost
+cat > /etc/fstab << EOF
+# <device>  <mount>  <type>  <options>  <dump> <pass>
+proc        /proc    proc    defaults   0      0
+sysfs       /sys     sysfs   defaults   0      0
+devpts      /dev/pts devpts  gid=5,mode=620  0  0
+tmpfs       /run     tmpfs   defaults   0      0
 EOF
 
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-
+# Build kernel
 cd /sources
-tar -xf linux-${LINUX_VER}.tar.xz
-cd linux-${LINUX_VER}
+tar -xf linux-6.7.4.tar.xz
+cd linux-6.7.4
+
+make mrproper
 make defconfig
-make -j\$(nproc)
+
+# Enable USB and persistence support
+scripts/config --enable USB_STORAGE
+scripts/config --enable EXT4_FS
+scripts/config --enable VFAT_FS
+scripts/config --enable NLS_CODEPAGE_437
+scripts/config --enable NLS_ISO8859_1
+
+make -j$(nproc)
 make modules_install
-cp arch/x86/boot/bzImage /boot/vmlinuz-${LINUX_VER}-blazeneuro
-cp System.map /boot/
-cd /sources && rm -rf linux-*
+cp -iv arch/x86/boot/bzImage /boot/vmlinuz-6.7.4-blazeneuro
+cp -iv System.map /boot/System.map-6.7.4
+cp -iv .config /boot/config-6.7.4
 
-grub-install --target=x86_64-efi --efi-directory=/boot || true
-grub-mkconfig -o /boot/grub/grub.cfg || true
+cd /sources && rm -rf linux-6.7.4
 
-cat > /sbin/init << "EOFINIT"
-#!/bin/bash
-mount -t proc proc /proc
-mount -t sysfs sysfs /sys
-mount -t devtmpfs devtmpfs /dev
-exec /bin/bash
-EOFINIT
-chmod +x /sbin/init
+# Install GRUB
+cd /sources
+tar -xf grub-2.12.tar.xz
+cd grub-2.12
+./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --disable-efiemu \
+    --disable-werror
+make
+make install
+cd /sources && rm -rf grub-2.12
 
-# Install terminal theme
-cp /sources/Xresources /root/.Xresources
-cp /sources/bashrc /root/.bashrc
-xrdb -merge /root/.Xresources 2>/dev/null || true
-
+echo "System configuration completed"
 EOFCHROOT
+
+chmod +x $LFS/configure-system.sh
+
+# Execute in chroot
+chroot "$LFS" /usr/bin/env -i \
+    HOME=/root \
+    TERM="$TERM" \
+    PS1='(lfs chroot) \u:\w\$ ' \
+    PATH=/usr/bin:/usr/sbin \
+    /bin/bash /configure-system.sh
+
+rm -f $LFS/configure-system.sh
+
+# Unmount
+umount -v $LFS/dev/pts
+umount -v $LFS/dev
+umount -v $LFS/proc
+umount -v $LFS/sys
+umount -v $LFS/run
 
 log_success "Stage 5 completed"

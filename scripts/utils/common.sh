@@ -1,19 +1,16 @@
 #!/bin/bash
-
-LOG_DIR="/home/ankit/Documents/Code/BlazeNeuroLinux/logs"
-LOG_FILE="${LOG_DIR}/build-$(date +%Y%m%d-%H%M%S).log"
-mkdir -p "${LOG_DIR}"
+# Common utility functions
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "${LOG_FILE}"
-}
-
-log_error() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" | tee -a "${LOG_FILE}" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "${LOG_DIR}/build.log"
 }
 
 log_success() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: $*" | tee -a "${LOG_FILE}"
+    echo -e "\033[0;32m[SUCCESS]\033[0m $*" | tee -a "${LOG_DIR}/build.log"
+}
+
+log_error() {
+    echo -e "\033[0;31m[ERROR]\033[0m $*" | tee -a "${LOG_DIR}/build.log"
 }
 
 die() {
@@ -26,43 +23,33 @@ check_root() {
 }
 
 check_host_requirements() {
-    log "Checking host system requirements..."
-    local required_cmds="bash bison gawk gcc g++ make patch tar wget"
-    for cmd in $required_cmds; do
-        command -v $cmd &>/dev/null || die "Required command not found: $cmd"
+    log "Checking host requirements..."
+    local missing=""
+    for cmd in gcc g++ make bison texinfo; do
+        command -v $cmd &>/dev/null || missing+="$cmd "
     done
+    [[ -z "$missing" ]] || die "Missing tools: $missing"
     log_success "Host requirements satisfied"
 }
 
-download_file() {
-    local url="$1"
-    local dest="$2"
+extract_source() {
+    local archive="$1"
+    local dest="${2:-$BUILD_DIR}"
+    log "Extracting: $(basename $archive)"
+    tar -xf "$archive" -C "$dest"
+}
+
+build_package() {
+    local name="$1"
+    local version="$2"
+    local build_func="$3"
     
-    if [[ -f "$dest" ]]; then
-        if tar -tf "$dest" &>/dev/null || file "$dest" | grep -q "gzip\|XZ\|bzip2"; then
-            log "File exists and valid: $dest"
-            return 0
-        else
-            log "File corrupted, re-downloading: $dest"
-            rm -f "$dest"
-        fi
-    fi
-    
-    local mirrors=(
-        "$url"
-        "${url//ftp.gnu.org/mirrors.kernel.org}"
-        "${url//ftp.gnu.org/mirror.us.leaseweb.net}"
-    )
-    
-    for mirror in "${mirrors[@]}"; do
-        log "Downloading: $mirror"
-        if wget --timeout=60 --tries=1 -q --show-progress -O "$dest.tmp" "$mirror" 2>&1; then
-            mv "$dest.tmp" "$dest"
-            return 0
-        fi
-        log "Mirror failed, trying next..."
-    done
-    
-    rm -f "$dest.tmp"
-    die "Failed to download from all mirrors: $url"
+    log "Building $name-$version..."
+    cd "$BUILD_DIR"
+    extract_source "${SOURCES_DIR}/${name}-${version}.tar.*"
+    cd "${name}-${version}"
+    $build_func
+    cd "$BUILD_DIR"
+    rm -rf "${name}-${version}"
+    log_success "$name-$version built"
 }
