@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/scripts/utils/common.sh"
 
 log "Stage 3: Building temporary system"
 
+mkdir -p "$BUILD_DIR"
 export PATH="$LFS/tools/bin:$PATH"
 
 # Bash

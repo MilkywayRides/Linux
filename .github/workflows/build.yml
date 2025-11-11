@@ -32,7 +32,7 @@ jobs:
         run: |
           sudo mkdir -p /mnt/lfs
           sudo chown -R $USER:$USER /mnt/lfs
-          mkdir -p logs
+          mkdir -p logs build
       
       - name: Build complete system
         run: sudo ./build.sh all

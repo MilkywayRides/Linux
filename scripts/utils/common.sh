@@ -35,6 +35,7 @@ check_host_requirements() {
 extract_source() {
     local archive="$1"
     local dest="${2:-$BUILD_DIR}"
+    mkdir -p "$dest"
     log "Extracting: $(basename $archive)"
     tar -xf "$archive" -C "$dest"
 }
@@ -45,6 +46,7 @@ build_package() {
     local build_func="$3"
     
     log "Building $name-$version..."
+    mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
     extract_source "${SOURCES_DIR}/${name}-${version}.tar.*"
     cd "${name}-${version}"

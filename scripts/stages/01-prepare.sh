@@ -12,6 +12,9 @@ mkdir -p "$LFS"/{tools,sources,build,usr,boot,etc,var,home}
 mkdir -p "$LFS"/usr/{bin,lib,sbin}
 mkdir -p "$LFS"/var/{log,tmp}
 
+# Create build directory in project
+mkdir -p "${BUILD_DIR}"
+
 # Create symlinks for compatibility
 ln -sf usr/bin "$LFS/bin" 2>/dev/null || true
 ln -sf usr/lib "$LFS/lib" 2>/dev/null || true

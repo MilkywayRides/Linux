@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/scripts/utils/common.sh"
 
 log "Stage 2: Building cross-toolchain"
 
+mkdir -p "$BUILD_DIR"
 export PATH="$LFS/tools/bin:$PATH"
 
 # Binutils Pass 1
