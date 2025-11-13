@@ -87,6 +87,15 @@ build_glibc() {
     make $MAKEFLAGS
     make DESTDIR=$LFS install
     sed '/RTLDLIST=/s@/usr@@g' -i $LFS/usr/bin/ldd
+    
+    # Fix MB_LEN_MAX for cross-compilation
+    cat > $LFS/usr/include/limits.h << 'EOF'
+#ifndef _LIBC_LIMITS_H_
+#define _LIBC_LIMITS_H_
+#include <linux/limits.h>
+#define MB_LEN_MAX 16
+#endif
+EOF
 }
 
 build_package "glibc" "$GLIBC_VER" build_glibc
