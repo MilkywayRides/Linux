@@ -10,6 +10,9 @@ log "Stage 3: Building temporary system"
 mkdir -p "$BUILD_DIR"
 export PATH="$LFS/tools/bin:$PATH"
 
+# Fix MB_LEN_MAX errors before building
+find $LFS/usr/include -name '*.h' -exec sed -i '/# error "Assumed value of MB_LEN_MAX wrong"/d' {} \; 2>/dev/null || true
+
 # Bash
 build_bash() {
     ./configure --prefix=/usr \
