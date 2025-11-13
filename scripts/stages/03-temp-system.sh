@@ -34,7 +34,9 @@ build_coreutils() {
         --enable-install-program=hostname \
         --enable-no-install-program=kill,uptime \
         --disable-year2038
-    make $MAKEFLAGS || make -j1
+    make -C lib $MAKEFLAGS
+    make -C src $MAKEFLAGS
+    make -C po $MAKEFLAGS
     make DESTDIR=$LFS install
     mv -v $LFS/usr/bin/chroot $LFS/usr/sbin
 }
