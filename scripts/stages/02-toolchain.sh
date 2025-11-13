@@ -88,8 +88,13 @@ build_glibc() {
     make DESTDIR=$LFS install
     sed '/RTLDLIST=/s@/usr@@g' -i $LFS/usr/bin/ldd
     
-    # Fix MB_LEN_MAX errors permanently
+    # Fix MB_LEN_MAX and PATH_MAX errors
     find $LFS/usr/include -name '*.h' -exec sed -i '/# error "Assumed value of MB_LEN_MAX wrong"/d' {} \;
+    
+    # Ensure PATH_MAX is defined
+    if ! grep -q 'PATH_MAX' $LFS/usr/include/limits.h 2>/dev/null; then
+        echo '#define PATH_MAX 4096' >> $LFS/usr/include/limits.h
+    fi
 }
 
 build_package "glibc" "$GLIBC_VER" build_glibc

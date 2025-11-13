@@ -32,8 +32,9 @@ build_coreutils() {
         --host=$LFS_TGT \
         --build=$(build-aux/config.guess) \
         --enable-install-program=hostname \
-        --enable-no-install-program=kill,uptime
-    make $MAKEFLAGS
+        --enable-no-install-program=kill,uptime \
+        --disable-year2038
+    make $MAKEFLAGS || make -j1
     make DESTDIR=$LFS install
     mv -v $LFS/usr/bin/chroot $LFS/usr/sbin
 }
