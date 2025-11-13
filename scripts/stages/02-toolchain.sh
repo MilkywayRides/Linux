@@ -88,14 +88,9 @@ build_glibc() {
     make DESTDIR=$LFS install
     sed '/RTLDLIST=/s@/usr@@g' -i $LFS/usr/bin/ldd
     
-    # Fix MB_LEN_MAX for cross-compilation
-    cat > $LFS/usr/include/limits.h << 'EOF'
-#ifndef _LIBC_LIMITS_H_
-#define _LIBC_LIMITS_H_
-#include <linux/limits.h>
-#define MB_LEN_MAX 16
-#endif
-EOF
+    # Fix MB_LEN_MAX in all glibc headers
+    sed -i 's/#if __GLIBC_USE (FORTIFY_LEVEL) > 0/#if 0/' $LFS/usr/include/bits/wchar2.h
+    sed -i 's/#if __GLIBC_USE (FORTIFY_LEVEL) > 0/#if 0/' $LFS/usr/include/bits/stdlib.h
 }
 
 build_package "glibc" "$GLIBC_VER" build_glibc
