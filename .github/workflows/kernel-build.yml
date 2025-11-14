@@ -30,47 +30,32 @@ jobs:
     - name: Setup LFS environment
       run: |
         sudo mkdir -p /mnt/lfs
+        sudo chown runner:runner /mnt/lfs
         export LFS=/mnt/lfs
         echo "LFS=/mnt/lfs" >> $GITHUB_ENV
         
-    - name: Create LFS filesystem structure
-      run: |
-        sudo mkdir -pv $LFS/{etc,var} $LFS/usr/{bin,lib,sbin}
-        for i in bin lib sbin; do
-          sudo ln -sv usr/$i $LFS/$i
-        done
-        case $(uname -m) in
-          x86_64) sudo mkdir -pv $LFS/lib64 ;;
-        esac
-        sudo mkdir -pv $LFS/tools
-        
     - name: Download kernel source
       run: |
-        cd $LFS
+        cd /mnt/lfs
         wget -q https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.1.62.tar.xz
-        sudo tar -xf linux-6.1.62.tar.xz
-        sudo mv linux-6.1.62 linux-source
+        tar -xf linux-6.1.62.tar.xz
+        mv linux-6.1.62 linux-source
         
     - name: Configure kernel
       run: |
-        cd $LFS/linux-source
-        sudo make defconfig
-        sudo make kvmconfig
+        cd /mnt/lfs/linux-source
+        make defconfig
+        make kvmconfig
         
     - name: Build kernel
       run: |
-        cd $LFS/linux-source
-        sudo make -j$(nproc) bzImage modules
-        
-    - name: Install kernel modules
-      run: |
-        cd $LFS/linux-source
-        sudo make INSTALL_MOD_PATH=$LFS modules_install
+        cd /mnt/lfs/linux-source
+        make -j$(nproc) bzImage modules
         
     - name: Create kernel package
       run: |
-        cd $LFS
-        sudo tar -czf kernel-build.tar.gz linux-source/arch/x86/boot/bzImage lib/modules/
+        cd /mnt/lfs
+        tar -czf kernel-build.tar.gz linux-source/arch/x86/boot/bzImage
         
     - name: Upload kernel artifacts
       uses: actions/upload-artifact@v4
