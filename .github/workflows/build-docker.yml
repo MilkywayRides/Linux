@@ -1,0 +1,85 @@
+name: Build BlazeNeuro (Docker)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
+          sudo apt-get clean
+          df -h
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Download sources
+        run: |
+          mkdir -p sources
+          cd sources
+          declare -A urls=(
+            ["binutils-2.42.tar.xz"]="https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz"
+            ["gcc-13.2.0.tar.xz"]="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
+            ["glibc-2.39.tar.xz"]="https://ftp.gnu.org/gnu/glibc/glibc-2.39.tar.xz"
+            ["linux-6.7.4.tar.xz"]="https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.7.4.tar.xz"
+            ["bash-5.2.21.tar.gz"]="https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz"
+            ["coreutils-9.4.tar.xz"]="https://ftp.gnu.org/gnu/coreutils/coreutils-9.4.tar.xz"
+            ["findutils-4.9.0.tar.xz"]="https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz"
+            ["grep-3.11.tar.xz"]="https://ftp.gnu.org/gnu/grep/grep-3.11.tar.xz"
+            ["gzip-1.13.tar.xz"]="https://ftp.gnu.org/gnu/gzip/gzip-1.13.tar.xz"
+            ["tar-1.35.tar.xz"]="https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz"
+            ["xz-5.4.6.tar.xz"]="https://github.com/tukaani-project/xz/releases/download/v5.4.6/xz-5.4.6.tar.xz"
+            ["util-linux-2.39.3.tar.xz"]="https://www.kernel.org/pub/linux/utils/util-linux/v2.39/util-linux-2.39.3.tar.xz"
+            ["e2fsprogs-1.47.0.tar.gz"]="https://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.47.0/e2fsprogs-1.47.0.tar.gz"
+            ["grub-2.12.tar.xz"]="https://ftp.gnu.org/gnu/grub/grub-2.12.tar.xz"
+          )
+          for file in "${!urls[@]}"; do
+            echo "Downloading $file"
+            wget --continue --tries=5 --timeout=30 "${urls[$file]}" -O "$file" || exit 1
+            # Verify archive
+            if [[ "$file" == *.xz ]]; then
+              xz -t "$file" || { echo "Corrupt: $file"; exit 1; }
+            elif [[ "$file" == *.gz ]]; then
+              gzip -t "$file" || { echo "Corrupt: $file"; exit 1; }
+            fi
+          done
+          ls -lh
+      
+      - name: Build Docker image
+        run: |
+          docker build -t blazeneuro-builder . || exit 1
+      
+      - name: Extract build artifact
+        run: |
+          docker create --name blazeneuro blazeneuro-builder
+          docker cp blazeneuro:/blazeneuro-rootfs.tar.gz . || exit 1
+          docker rm blazeneuro
+      
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: logs/
+          retention-days: 7
+          if-no-files-found: warn
+      
+      - name: Upload system image
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blazeneuro-system
+          path: blazeneuro-rootfs.tar.gz
+          retention-days: 30

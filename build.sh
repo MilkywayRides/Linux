@@ -43,6 +43,8 @@ case "${1:-help}" in
     all)
         check_root
         check_host_requirements
+        log "Verifying source packages..."
+        bash "${SCRIPT_DIR}/scripts/verify-sources.sh" || die "Source verification failed"
         run_stage "01-prepare"
         run_stage "02-toolchain"
         run_stage "03-temp-system"

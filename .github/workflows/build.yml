@@ -27,16 +27,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential bison flex texinfo gawk \
             libncurses-dev bc libssl-dev libelf-dev parted rsync wget xz-utils \
-            libgmp-dev libmpfr-dev libmpc-dev libx11-dev libxft-dev
+            libgmp-dev libmpfr-dev libmpc-dev libx11-dev libxft-dev python3 \
+            python3-pip gettext autoconf automake libtool pkg-config m4
       
       - name: Create directory structure
         run: |
-          sudo mkdir -p /mnt/lfs
+          sudo mkdir -p /mnt/lfs/{tools,sources,build,usr,boot,etc,var,home}
+          sudo mkdir -p /mnt/lfs/usr/{bin,lib,sbin}
           sudo chown -R $USER:$USER /mnt/lfs
-          mkdir -p logs build sources
+          mkdir -p logs build
+          cp -r sources /mnt/lfs/ || mkdir -p /mnt/lfs/sources
           
       - name: Download sources
         run: |
+          mkdir -p sources
           cd sources
           declare -A urls=(
             ["binutils-2.42.tar.xz"]="https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz|https://mirrors.kernel.org/gnu/binutils/binutils-2.42.tar.xz"
@@ -74,9 +78,13 @@ jobs:
             fi
           done
           ls -lh
+          # Copy to /mnt/lfs/sources for build
+          sudo cp -v *.tar.* /mnt/lfs/sources/ || true
       
       - name: Build complete system
-        run: sudo ./build.sh all
+        run: |
+          chmod +x build.sh
+          sudo ./build.sh all
       
       - name: Upload build logs
         if: always()

@@ -71,8 +71,15 @@ build_package() {
     fi
     
     extract_source "$src_file"
-    cd "${name}-${version}"
-    $build_func
+    cd "${name}-${version}" || die "Failed to enter ${name}-${version} directory"
+    
+    # Run build function with error handling
+    if ! $build_func; then
+        log_error "Build function failed for $name-$version"
+        cd "$BUILD_DIR"
+        return 1
+    fi
+    
     cd "$BUILD_DIR"
     rm -rf "${name}-${version}"
     log_success "$name-$version built"

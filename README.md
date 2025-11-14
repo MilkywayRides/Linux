@@ -115,13 +115,30 @@ sudo ./build.sh clean
 
 ## GitHub Actions Cloud Build
 
-The system automatically builds on GitHub Actions:
+Two build methods available:
 
+### Method 1: Direct Build (build.yml)
+Builds directly on Ubuntu runner:
 1. Push to `main` or `develop` branch
 2. GitHub Actions compiles the entire system
-3. Download artifacts:
-   - `build-logs`: Complete build logs
-   - `blazeneuro-system`: Root filesystem tarball
+3. Download artifacts from Actions tab
+
+### Method 2: Docker Build (build-docker.yml) - RECOMMENDED
+More reliable, uses containerized build:
+1. Uses multi-stage Dockerfile
+2. Better isolation and reproducibility
+3. Easier to debug locally
+
+### Local Docker Build
+```bash
+# Build with Docker
+docker build -t blazeneuro-builder .
+
+# Extract artifact
+docker create --name blazeneuro blazeneuro-builder
+docker cp blazeneuro:/blazeneuro-rootfs.tar.gz .
+docker rm blazeneuro
+```
 
 ### Manual Trigger
 ```bash
@@ -155,10 +172,21 @@ USB_BOOT_SIZE="512MiB"         # Boot partition size
 
 ## Troubleshooting
 
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions.
+
+### Common Issues
+
+**Coreutils build fails**: Fixed with config cache workarounds
+**MB_LEN_MAX errors**: Fixed in glibc stage
+**Parallel build failures**: Auto-fallback to single-threaded make
+
 ### Build Fails
 ```bash
 # Check logs
 tail -f logs/build.log
+
+# Verify sources
+bash scripts/verify-sources.sh
 
 # Retry specific stage
 sudo ./build.sh stage2

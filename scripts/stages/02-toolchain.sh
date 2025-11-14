@@ -84,17 +84,22 @@ build_glibc() {
         --with-headers=$LFS/usr/include \
         --disable-nscd \
         libc_cv_slibdir=/usr/lib
-    make $MAKEFLAGS
+    make $MAKEFLAGS || make -j1
     make DESTDIR=$LFS install
     sed '/RTLDLIST=/s@/usr@@g' -i $LFS/usr/bin/ldd
     
-    # Fix MB_LEN_MAX and PATH_MAX errors
-    find $LFS/usr/include -name '*.h' -exec sed -i '/# error "Assumed value of MB_LEN_MAX wrong"/d' {} \;
+    # Fix MB_LEN_MAX errors
+    find $LFS/usr/include -name '*.h' -exec sed -i '/# error "Assumed value of MB_LEN_MAX wrong"/d' {} \; 2>/dev/null || true
     
-    # Ensure PATH_MAX is defined
-    if ! grep -q 'PATH_MAX' $LFS/usr/include/limits.h 2>/dev/null; then
-        echo '#define PATH_MAX 4096' >> $LFS/usr/include/limits.h
-    fi
+    # Create proper limits.h with all required macros
+    cat >> $LFS/usr/include/limits.h << 'LIMITS_EOF'
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+#ifndef MB_LEN_MAX
+#define MB_LEN_MAX 16
+#endif
+LIMITS_EOF
 }
 
 build_package "glibc" "$GLIBC_VER" build_glibc

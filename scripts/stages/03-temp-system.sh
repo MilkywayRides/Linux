@@ -21,32 +21,45 @@ build_bash() {
         --without-bash-malloc
     make $MAKEFLAGS
     make DESTDIR=$LFS install
-    ln -sv bash $LFS/usr/bin/sh
+    ln -svf bash $LFS/usr/bin/sh
 }
 
 build_package "bash" "5.2.21" build_bash
 
 # Coreutils
 build_coreutils() {
+    # Apply workarounds for cross-compilation
+    cat > config.cache << EOF
+fu_cv_sys_stat_statfs2_bsize=yes
+gl_cv_func_working_mkstemp=yes
+gl_cv_func_working_utimes=yes
+EOF
+    
     ./configure --prefix=/usr \
         --host=$LFS_TGT \
         --build=$(build-aux/config.guess) \
         --enable-install-program=hostname \
         --enable-no-install-program=kill,uptime \
-        --disable-year2038
-    make $MAKEFLAGS SUBDIRS='lib src po'
-    make DESTDIR=$LFS install-strip
-    mv -v $LFS/usr/bin/chroot $LFS/usr/sbin
+        --cache-file=config.cache \
+        gl_cv_macro_MB_LEN_MAX_good=y
+    make $MAKEFLAGS || make -j1
+    make DESTDIR=$LFS install
+    mv -v $LFS/usr/bin/chroot $LFS/usr/sbin 2>/dev/null || true
 }
 
 build_package "coreutils" "9.4" build_coreutils
 
 # Findutils
 build_findutils() {
+    cat > config.cache << EOF
+gl_cv_func_working_mktime=yes
+gl_cv_func_wcwidth_works=yes
+EOF
     ./configure --prefix=/usr \
         --host=$LFS_TGT \
-        --build=$(build-aux/config.guess)
-    make $MAKEFLAGS
+        --build=$(build-aux/config.guess) \
+        --cache-file=config.cache
+    make $MAKEFLAGS || make -j1
     make DESTDIR=$LFS install
 }
 
@@ -55,7 +68,7 @@ build_package "findutils" "4.9.0" build_findutils
 # Grep
 build_grep() {
     ./configure --prefix=/usr --host=$LFS_TGT
-    make $MAKEFLAGS
+    make $MAKEFLAGS || make -j1
     make DESTDIR=$LFS install
 }
 
@@ -64,7 +77,7 @@ build_package "grep" "3.11" build_grep
 # Gzip
 build_gzip() {
     ./configure --prefix=/usr --host=$LFS_TGT
-    make $MAKEFLAGS
+    make $MAKEFLAGS || make -j1
     make DESTDIR=$LFS install
 }
 
@@ -72,10 +85,14 @@ build_package "gzip" "1.13" build_gzip
 
 # Tar
 build_tar() {
+    cat > config.cache << EOF
+gl_cv_func_working_mktime=yes
+EOF
     ./configure --prefix=/usr \
         --host=$LFS_TGT \
-        --build=$(build-aux/config.guess)
-    make $MAKEFLAGS
+        --build=$(build-aux/config.guess) \
+        --cache-file=config.cache
+    make $MAKEFLAGS || make -j1
     make DESTDIR=$LFS install
 }
 
@@ -86,10 +103,11 @@ build_xz() {
     ./configure --prefix=/usr \
         --host=$LFS_TGT \
         --build=$(build-aux/config.guess) \
-        --disable-static
-    make $MAKEFLAGS
+        --disable-static \
+        --docdir=/usr/share/doc/xz-5.4.6
+    make $MAKEFLAGS || make -j1
     make DESTDIR=$LFS install
-    rm -v $LFS/usr/lib/liblzma.la
+    rm -fv $LFS/usr/lib/liblzma.la
 }
 
 build_package "xz" "5.4.6" build_xz
