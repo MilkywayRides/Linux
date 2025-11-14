@@ -19,6 +19,8 @@ die() {
 }
 
 check_root() {
+    # Skip root check in Docker
+    [[ -f /.dockerenv ]] && return 0
     [[ $EUID -eq 0 ]] || die "This script must be run as root"
 }
 

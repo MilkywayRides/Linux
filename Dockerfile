@@ -33,8 +33,8 @@ FROM base AS builder
 COPY . /build/
 RUN chmod +x /build/build.sh /build/scripts/stages/*.sh
 
-# Build the system
-RUN /build/build.sh all || (cat /build/logs/build.log && exit 1)
+# Create logs directory and build
+RUN mkdir -p /build/logs && /build/build.sh all || (cat /build/logs/build.log 2>/dev/null && exit 1)
 
 # Create final artifact
 FROM builder AS packager
