@@ -1,0 +1,80 @@
+name: Cloud Kernel Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'lfs-*.sh'
+      - '.github/workflows/kernel-build.yml'
+
+jobs:
+  kernel-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Free disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
+        sudo apt-get clean
+        df -h
+    
+    - name: Install LFS prerequisites
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential bison flex texinfo gawk m4 \
+          libncurses5-dev libssl-dev bc kmod cpio initramfs-tools
+    
+    - name: Setup LFS environment
+      run: |
+        sudo mkdir -p /mnt/lfs
+        export LFS=/mnt/lfs
+        echo "LFS=/mnt/lfs" >> $GITHUB_ENV
+        
+    - name: Create LFS filesystem structure
+      run: |
+        sudo mkdir -pv $LFS/{etc,var} $LFS/usr/{bin,lib,sbin}
+        for i in bin lib sbin; do
+          sudo ln -sv usr/$i $LFS/$i
+        done
+        case $(uname -m) in
+          x86_64) sudo mkdir -pv $LFS/lib64 ;;
+        esac
+        sudo mkdir -pv $LFS/tools
+        
+    - name: Download kernel source
+      run: |
+        cd $LFS
+        wget -q https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.1.62.tar.xz
+        sudo tar -xf linux-6.1.62.tar.xz
+        sudo mv linux-6.1.62 linux-source
+        
+    - name: Configure kernel
+      run: |
+        cd $LFS/linux-source
+        sudo make defconfig
+        sudo make kvmconfig
+        
+    - name: Build kernel
+      run: |
+        cd $LFS/linux-source
+        sudo make -j$(nproc) bzImage modules
+        
+    - name: Install kernel modules
+      run: |
+        cd $LFS/linux-source
+        sudo make INSTALL_MOD_PATH=$LFS modules_install
+        
+    - name: Create kernel package
+      run: |
+        cd $LFS
+        sudo tar -czf kernel-build.tar.gz linux-source/arch/x86/boot/bzImage lib/modules/
+        
+    - name: Upload kernel artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: lfs-kernel-build
+        path: /mnt/lfs/kernel-build.tar.gz
+        retention-days: 7

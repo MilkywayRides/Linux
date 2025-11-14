@@ -5,9 +5,16 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      build_kernel:
+        description: 'Build kernel in cloud'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     
     steps:
@@ -16,11 +23,11 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential bison gawk texinfo
+        sudo apt-get install -y build-essential bison gawk texinfo shellcheck
     
     - name: Validate scripts
       run: |
-        bash -n *.sh || true
+        bash -n *.sh
         
     - name: Check script permissions
       run: |
@@ -28,5 +35,9 @@ jobs:
         
     - name: Lint shell scripts
       run: |
-        sudo apt-get install -y shellcheck
-        shellcheck *.sh || true
+        shellcheck *.sh
+
+  kernel-build:
+    if: github.event.inputs.build_kernel == 'true'
+    needs: validate
+    uses: ./.github/workflows/kernel-build.yml
