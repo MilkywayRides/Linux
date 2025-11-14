@@ -13,6 +13,7 @@ Usage: $0 [OPTION]
 
 Options:
     all      Build complete system
+    all-prebuilt  Build with prebuilt kernel (faster)
     stage1   Prepare environment
     stage2   Build cross-toolchain
     stage3   Build temporary system
@@ -25,6 +26,7 @@ Options:
 
 Example:
     sudo $0 all
+    sudo $0 all-prebuilt
     sudo $0 usb /dev/sdb
 EOF
     exit 0
@@ -52,6 +54,19 @@ case "${1:-help}" in
         run_stage "05-configure"
         run_stage "06-gui"
         log_success "BlazeNeuro build completed!"
+        ;;
+    all-prebuilt)
+        check_root
+        check_host_requirements
+        log "Building with prebuilt kernel..."
+        bash "${SCRIPT_DIR}/scripts/verify-sources.sh" || die "Source verification failed"
+        run_stage "01-prepare"
+        run_stage "02-toolchain"
+        run_stage "03-temp-system"
+        run_stage "04-final-system"
+        run_stage "05-configure-prebuilt"
+        run_stage "06-gui"
+        log_success "BlazeNeuro build with prebuilt kernel completed!"
         ;;
     stage1) check_root; run_stage "01-prepare" ;;
     stage2) check_root; run_stage "02-toolchain" ;;

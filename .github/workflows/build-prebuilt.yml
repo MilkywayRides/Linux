@@ -1,0 +1,64 @@
+name: Build BlazeNeuro (Prebuilt Kernel)
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'scripts/stages/05-configure-prebuilt.sh'
+  workflow_dispatch:
+
+jobs:
+  build-prebuilt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get clean
+          df -h
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex texinfo gawk \
+            libncurses-dev bc libssl-dev libelf-dev parted rsync wget \
+            libgmp-dev libmpfr-dev libmpc-dev python3 gettext autoconf \
+            automake libtool pkg-config m4 xz-utils
+      
+      - name: Download sources (no kernel)
+        run: |
+          bash scripts/download-sources.sh
+          # Remove kernel source to save space
+          rm -f sources/linux-6.7.4.tar.xz
+      
+      - name: Build with prebuilt kernel
+        run: |
+          sudo ./build.sh all-prebuilt
+      
+      - name: Create system archive
+        run: |
+          cd /mnt/lfs
+          sudo tar czf /tmp/blazeneuro-prebuilt.tar.gz .
+          sudo chown $USER:$USER /tmp/blazeneuro-prebuilt.tar.gz
+          mv /tmp/blazeneuro-prebuilt.tar.gz .
+      
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-prebuilt
+          path: logs/
+          retention-days: 7
+      
+      - name: Upload system image
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blazeneuro-prebuilt-system
+          path: blazeneuro-prebuilt.tar.gz
+          retention-days: 30
