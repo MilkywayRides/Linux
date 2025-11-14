@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libgmp-dev libmpfr-dev libmpc-dev \
     python3 python3-pip gettext autoconf automake \
     libtool pkg-config m4 rsync xz-utils \
+    passwd sudo \
     && rm -rf /var/lib/apt/lists/*
 
 # Create LFS directory structure

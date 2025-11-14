@@ -20,15 +20,16 @@ ln -sf usr/bin "$LFS/bin" 2>/dev/null || true
 ln -sf usr/lib "$LFS/lib" 2>/dev/null || true
 ln -sf usr/sbin "$LFS/sbin" 2>/dev/null || true
 
-# Create lfs user if not exists
-if ! id -u lfs &>/dev/null; then
+# Create lfs user if not exists (skip in Docker)
+if [ ! -f /.dockerenv ] && ! id -u lfs &>/dev/null; then
     groupadd lfs
     useradd -s /bin/bash -g lfs -m -k /dev/null lfs
     log "Created lfs user"
+    # Set ownership
+    chown -R lfs:lfs "$LFS"/{tools,sources,build}
+else
+    log "Skipping user creation (Docker environment or user exists)"
 fi
-
-# Set ownership
-chown -R lfs:lfs "$LFS"/{tools,sources,build}
 
 # Copy sources to LFS
 log "Copying source packages..."
