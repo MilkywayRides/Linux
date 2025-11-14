@@ -1,0 +1,9 @@
+*.log
+*.tar
+sources/
+tools/
+/mnt/
+build/
+*.o
+*.so
+*.a
