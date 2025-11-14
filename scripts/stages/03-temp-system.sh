@@ -10,8 +10,17 @@ log "Stage 3: Building temporary system"
 mkdir -p "$BUILD_DIR"
 export PATH="$LFS/tools/bin:$PATH"
 
-# Fix MB_LEN_MAX errors before building
+# Fix header errors before building
 find $LFS/usr/include -name '*.h' -exec sed -i '/# error "Assumed value of MB_LEN_MAX wrong"/d' {} \; 2>/dev/null || true
+
+# Ensure _POSIX_ARG_MAX is defined
+if ! grep -q '_POSIX_ARG_MAX' $LFS/usr/include/limits.h 2>/dev/null; then
+    cat >> $LFS/usr/include/limits.h << 'EOF'
+#ifndef _POSIX_ARG_MAX
+#define _POSIX_ARG_MAX 4096
+#endif
+EOF
+fi
 
 # Bash
 build_bash() {

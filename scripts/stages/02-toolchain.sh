@@ -99,6 +99,9 @@ build_glibc() {
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX 16
 #endif
+#ifndef _POSIX_ARG_MAX
+#define _POSIX_ARG_MAX 4096
+#endif
 LIMITS_EOF
 }
 
